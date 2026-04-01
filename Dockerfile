@@ -11,3 +11,5 @@ COPY models/ ./models/
 COPY data/ ./data/
 
 EXPOSE 7860
+
+CMD ["streamlit", "run", "app/streamlit_app.py", "--server.port=7860", "--server.address=0.0.0.0"]
