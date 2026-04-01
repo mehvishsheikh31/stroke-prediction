@@ -10,14 +10,13 @@ import os
 
 st.set_page_config(page_title="Stroke Prediction Dashboard", page_icon="🧠", layout="wide")
 
-# ─── SESSION STATE ─────────────────────────────────
+# ─── SESSION STATE ─────────────────────
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
-
 if "prediction_data" not in st.session_state:
     st.session_state.prediction_data = None
 
-# ─── HEADER ────────────────────────────────────────
+# ─── HEADER ────────────────────────────
 col_title, col_toggle = st.columns([8, 1])
 with col_title:
     st.markdown("## 🧠 Stroke Prediction Dashboard")
@@ -25,39 +24,36 @@ with col_toggle:
     if st.button("🌙" if st.session_state.dark_mode else "☀️"):
         st.session_state.dark_mode = not st.session_state.dark_mode
 
-# ─── COLORS ────────────────────────────────────────
+# ─── COLORS ────────────────────────────
 accent  = "#e74c3c"
 accent2 = "#2e86ab"
 card_bg = "#1a1d27"
 border  = "#2a2d3a"
 text    = "#e0e0e0"
-subtext = "#9e9e9e"
 
-# ─── LOAD DATA ─────────────────────────────────────
+# ─── LOAD DATA ─────────────────────────
 @st.cache_data
 def load_data():
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return pd.read_csv(os.path.join(base, "data", "raw", "healthcare-dataset-stroke-data.csv"))
+    return pd.read_csv("data/raw/healthcare-dataset-stroke-data.csv")
 
 @st.cache_resource
 def load_artifacts():
-    base  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model = joblib.load(os.path.join(base, "models", "stroke_model.pkl"))
-    cols  = joblib.load(os.path.join(base, "models", "feature_columns.pkl"))
-    thr   = joblib.load(os.path.join(base, "models", "threshold.pkl"))
-    bmi_m = joblib.load(os.path.join(base, "models", "bmi_median.pkl"))
+    model = joblib.load("models/stroke_model.pkl")
+    cols  = joblib.load("models/feature_columns.pkl")
+    thr   = joblib.load("models/threshold.pkl")
+    bmi_m = joblib.load("models/bmi_median.pkl")
     return model, cols, thr, bmi_m
 
 df = load_data()
 model, feat_cols, threshold, bmi_median = load_artifacts()
 
-# ─── TAB CONTROL (NO SHAKING) ──────────────────────
+# ─── TAB CONTROL (FIXES SHAKING) ───────
 tabs = ["🔮 Predict", "📊 EDA", "🏆 Model Comparison", "🔍 SHAP Explainability"]
 selected_tab = st.radio("", tabs, horizontal=True)
 
-# ═══════════════════════════════════════════════════
+# ═══════════════════════════════════════
 # 🔮 PREDICT
-# ═══════════════════════════════════════════════════
+# ═══════════════════════════════════════
 if selected_tab == "🔮 Predict":
 
     col1, col2, col3 = st.columns(3)
@@ -95,12 +91,9 @@ if selected_tab == "🔮 Predict":
         res = requests.post("http://127.0.0.1:8000/predict", json=payload)
         st.session_state.prediction_data = res.json()
 
-    # RESULT (STABLE)
     if st.session_state.prediction_data:
         data = st.session_state.prediction_data
-
         c1, c2, c3 = st.columns(3)
-
         with c1:
             st.metric("Stroke Probability", f"{data['stroke_probability']*100:.1f}%")
         with c2:
@@ -108,27 +101,41 @@ if selected_tab == "🔮 Predict":
         with c3:
             st.metric("Risk", data["risk"])
 
-# ═══════════════════════════════════════════════════
-# 📊 EDA
-# ═══════════════════════════════════════════════════
+# ═══════════════════════════════════════
+# 📊 EDA (FULL)
+# ═══════════════════════════════════════
 elif selected_tab == "📊 EDA":
 
-    st.write("EDA Section")
+    st.subheader("Dataset Overview")
 
     fig, ax = plt.subplots()
     sns.histplot(df["age"], kde=True, ax=ax)
     st.pyplot(fig)
 
-# ═══════════════════════════════════════════════════
-# 🏆 MODEL
-# ═══════════════════════════════════════════════════
+    fig, ax = plt.subplots()
+    sns.boxplot(x="stroke", y="avg_glucose_level", data=df, ax=ax)
+    st.pyplot(fig)
+
+# ═══════════════════════════════════════
+# 🏆 MODEL COMPARISON
+# ═══════════════════════════════════════
 elif selected_tab == "🏆 Model Comparison":
 
-    st.write("Model Comparison")
+    results = pd.DataFrame({
+        "Model": ["Logistic Regression", "Random Forest", "XGBoost"],
+        "Recall": [0.50, 0.26, 0.80],
+        "Precision": [0.19, 0.11, 0.13],
+    })
 
-# ═══════════════════════════════════════════════════
+    st.dataframe(results)
+
+    fig, ax = plt.subplots()
+    ax.bar(results["Model"], results["Recall"])
+    st.pyplot(fig)
+
+# ═══════════════════════════════════════
 # 🔍 SHAP
-# ═══════════════════════════════════════════════════
+# ═══════════════════════════════════════
 elif selected_tab == "🔍 SHAP Explainability":
 
     if st.button("Generate SHAP"):
