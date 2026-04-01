@@ -224,11 +224,11 @@ plt.rcParams.update({
     "text.color":       text,
     "grid.color":       border,
 })
-
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "🔮 Predict"
 # ─── TABS ───────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🔮 Predict", "📊 EDA", "🏆 Model Comparison", "🔍 SHAP Explainability"
-])
+tabs = ["🔮 Predict", "📊 EDA", "🏆 Model Comparison", "🔍 SHAP Explainability"]
+tab1, tab2, tab3, tab4 = st.tabs(tabs)
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 — PREDICT
@@ -236,6 +236,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # TAB 1 — PREDICT
 # ════════════════════════════════════════════════════════════════════════════
 with tab1:
+    st.session_state.active_tab = "🔮 Predict"
     st.markdown('<div class="section-header">Patient Information</div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
@@ -337,6 +338,9 @@ df = get_df()
 
 
 with tab2:
+    st.session_state.active_tab = "📊 EDA"
+    if st.session_state.active_tab != "📊 EDA":
+        st.stop()
     st.markdown('<div class="section-header">Dataset Overview</div>', unsafe_allow_html=True)
 
     m1, m2, m3, m4 = st.columns(4)
@@ -425,6 +429,9 @@ with tab2:
 # TAB 3 — MODEL COMPARISON
 # ════════════════════════════════════════════════════════════════════════════
 with tab3:
+    st.session_state.active_tab ="🏆 Model Comparison"
+    if st.session_state.active_tab != "🏆 Model Comparison":
+        st.stop()
     st.markdown('<div class="section-header">Model Performance Comparison</div>', unsafe_allow_html=True)
     st.info("These metrics are from notebook evaluation on the held-out test set.")
 
@@ -486,6 +493,9 @@ with tab3:
 # TAB 4 — SHAP
 # ════════════════════════════════════════════════════════════════════════════
 with tab4:
+    st.session_state.active_tab = "🔍 SHAP Explainability"
+    if st.session_state.active_tab != "🔍 SHAP Explainability":
+     st.stop()
     st.markdown('<div class="section-header">SHAP Feature Explainability</div>', unsafe_allow_html=True)
     st.markdown("SHAP shows which features drive the model's predictions and by how much.")
 
@@ -513,7 +523,12 @@ with tab4:
                 bool_c = X_test.select_dtypes("bool").columns
                 X_test[bool_c] = X_test[bool_c].astype(int)
 
-                explainer   = shap.Explainer(model)
+                
+                @st.cache_resource
+                def get_explainer(model):
+                 return shap.Explainer(model)
+
+                explainer = get_explainer(model)
                 shap_values = explainer(X_test[:100])
 
                 fig, ax = plt.subplots(figsize=(10, 6))
