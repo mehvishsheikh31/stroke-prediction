@@ -34,7 +34,7 @@ with col_title:
 with col_toggle:
     if st.button("🌙" if st.session_state.dark_mode else "☀️"):
         st.session_state.dark_mode = not st.session_state.dark_mode
-        st.rerun()
+    
 
 dark = st.session_state.dark_mode
 
