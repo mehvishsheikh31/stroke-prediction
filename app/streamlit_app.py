@@ -210,7 +210,7 @@ def load_artifacts():
     bmi_m = joblib.load(os.path.join(base, "models", "bmi_median.pkl"))
     return model, cols, thr, bmi_m
 
-df               = load_data()
+df = load_data()
 model, feat_cols, threshold, bmi_median = load_artifacts()
 
 COLORS = [accent2, accent]
@@ -230,6 +230,8 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "🔮 Predict", "📊 EDA", "🏆 Model Comparison", "🔍 SHAP Explainability"
 ])
 
+# ════════════════════════════════════════════════════════════════════════════
+# TAB 1 — PREDICT
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 — PREDICT
 # ════════════════════════════════════════════════════════════════════════════
@@ -257,68 +259,83 @@ with tab1:
     st.markdown("")
     predict_btn = st.button("🔮 Predict Stroke Risk")
 
+    # ─── ONLY API CALL HERE ───────────────────────────────────────────────
     if predict_btn:
         payload = {
-            "gender":            gender,
-            "age":               age,
-            "hypertension":      hypert,
-            "heart_disease":     heart,
-            "ever_married":      married,
-            "work_type":         work,
-            "Residence_type":    residence,
+            "gender": gender,
+            "age": age,
+            "hypertension": hypert,
+            "heart_disease": heart,
+            "ever_married": married,
+            "work_type": work,
+            "Residence_type": residence,
             "avg_glucose_level": glucose,
-            "bmi":               bmi_input if bmi_input > 0 else None,
-            "smoking_status":    smoking
+            "bmi": bmi_input if bmi_input > 0 else None,
+            "smoking_status": smoking
         }
 
         try:
-            res  = requests.post("http://127.0.0.1:8000/predict", json=payload, timeout=5)
-            data = res.json()
-
-            st.markdown("---")
-            st.markdown('<div class="section-header">Prediction Result</div>', unsafe_allow_html=True)
-
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{data['stroke_probability']*100:.1f}%</div>
-                    <div class="metric-label">Stroke Probability</div>
-                </div>""", unsafe_allow_html=True)
-            with c2:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{'1' if data['prediction'] else '0'}</div>
-                    <div class="metric-label">Prediction (1 = Stroke)</div>
-                </div>""", unsafe_allow_html=True)
-            with c3:
-                risk_class = "risk-high" if data["risk"] == "High" else "risk-low"
-                st.markdown(f"""
-                <div class="{risk_class}">
-                    {'⚠️ HIGH RISK' if data['risk'] == 'High' else '✅ LOW RISK'}
-                </div>""", unsafe_allow_html=True)
-
-            # Probability gauge
-            st.markdown("")
-            prob = data["stroke_probability"]
-            fig, ax = plt.subplots(figsize=(8, 1.2))
-            ax.barh(0, 1, color=border, height=0.4)
-            ax.barh(0, prob, color=accent if prob >= threshold else "#2ecc71", height=0.4)
-            ax.axvline(threshold, color="white", linestyle="--", linewidth=1.5, label=f"Threshold ({threshold})")
-            ax.set_xlim(0, 1)
-            ax.set_yticks([])
-            ax.set_xlabel("Stroke Probability")
-            ax.legend(loc="upper right", fontsize=8)
-            ax.set_title("Risk Gauge", fontsize=10)
-            st.pyplot(fig)
-            plt.close()
+            res = requests.post("http://127.0.0.1:8000/predict", json=payload, timeout=5)
+            st.session_state["prediction_data"] = res.json()
 
         except Exception as e:
             st.error(f"API Error: {e}. Make sure FastAPI is running on port 8000.")
 
+    # ─── RESULT DISPLAY (STABLE, NO SHAKING) ───────────────────────────────
+    if "prediction_data" in st.session_state:
+        data = st.session_state["prediction_data"]
+
+        st.markdown("---")
+        st.markdown('<div class="section-header">Prediction Result</div>', unsafe_allow_html=True)
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{data['stroke_probability']*100:.1f}%</div>
+                <div class="metric-label">Stroke Probability</div>
+            </div>""", unsafe_allow_html=True)
+
+        with c2:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{'1' if data['prediction'] else '0'}</div>
+                <div class="metric-label">Prediction (1 = Stroke)</div>
+            </div>""", unsafe_allow_html=True)
+
+        with c3:
+            risk_class = "risk-high" if data["risk"] == "High" else "risk-low"
+            st.markdown(f"""
+            <div class="{risk_class}">
+                {'⚠️ HIGH RISK' if data['risk'] == 'High' else '✅ LOW RISK'}
+            </div>""", unsafe_allow_html=True)
+
+        # Probability Gauge (UNCHANGED)
+        st.markdown("")
+        prob = data["stroke_probability"]
+        fig, ax = plt.subplots(figsize=(8, 1.2))
+        ax.barh(0, 1, color=border, height=0.4)
+        ax.barh(0, prob, color=accent if prob >= threshold else "#2ecc71", height=0.4)
+        ax.axvline(threshold, color="white", linestyle="--", linewidth=1.5)
+        ax.set_xlim(0, 1)
+        ax.set_yticks([])
+        ax.set_xlabel("Stroke Probability")
+        ax.set_title("Risk Gauge", fontsize=10)
+        st.pyplot(fig)
+        plt.close()
+
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 2 — EDA
 # ════════════════════════════════════════════════════════════════════════════
+
+@st.cache_data
+def get_df():
+    return load_data()
+
+df = get_df()
+
+
 with tab2:
     st.markdown('<div class="section-header">Dataset Overview</div>', unsafe_allow_html=True)
 
