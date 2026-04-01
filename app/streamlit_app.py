@@ -272,7 +272,7 @@ with tab1:
         }
 
         try:
-            res  = requests.post("http://127.0.0.1:7860/predict", json=payload, timeout=5)
+            res  = requests.post("http://127.0.0.1:8000/predict", json=payload, timeout=5)
             data = res.json()
 
             st.markdown("---")
