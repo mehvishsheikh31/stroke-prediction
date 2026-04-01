@@ -236,85 +236,93 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.markdown('<div class="section-header">Patient Information</div>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-    with col1:
-        gender     = st.selectbox("Gender", ["Male", "Female", "Other"])
-        age        = st.number_input("Age", min_value=1, max_value=119, value=45)
-        hypert     = st.selectbox("Hypertension", [0, 1], format_func=lambda x: "Yes" if x else "No")
-        heart      = st.selectbox("Heart Disease", [0, 1], format_func=lambda x: "Yes" if x else "No")
+with col1:
+    gender     = st.selectbox("Gender", ["Male", "Female", "Other"])
+    age        = st.number_input("Age", min_value=1, max_value=119, value=45)
+    hypert     = st.selectbox("Hypertension", [0, 1], format_func=lambda x: "Yes" if x else "No")
+    heart      = st.selectbox("Heart Disease", [0, 1], format_func=lambda x: "Yes" if x else "No")
 
-    with col2:
-        married    = st.selectbox("Ever Married", ["Yes", "No"])
-        work       = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
-        residence  = st.selectbox("Residence Type", ["Urban", "Rural"])
+with col2:
+    married    = st.selectbox("Ever Married", ["Yes", "No"])
+    work       = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
+    residence  = st.selectbox("Residence Type", ["Urban", "Rural"])
 
-    with col3:
-        glucose    = st.number_input("Avg Glucose Level", min_value=1.0, max_value=499.0, value=100.0)
-        bmi_input  = st.number_input("BMI (0 = unknown)", min_value=0.0, max_value=99.0, value=25.0)
-        smoking    = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
+with col3:
+    glucose    = st.number_input("Avg Glucose Level", min_value=1.0, max_value=499.0, value=100.0)
+    bmi_input  = st.number_input("BMI (0 = unknown)", min_value=0.0, max_value=99.0, value=25.0)
+    smoking    = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
 
-    st.markdown("")
-    predict_btn = st.button("🔮 Predict Stroke Risk")
+st.markdown("")
+predict_btn = st.button("🔮 Predict Stroke Risk")
 
-    if predict_btn:
-        payload = {
-            "gender":            gender,
-            "age":               age,
-            "hypertension":      hypert,
-            "heart_disease":     heart,
-            "ever_married":      married,
-            "work_type":         work,
-            "Residence_type":    residence,
-            "avg_glucose_level": glucose,
-            "bmi":               bmi_input if bmi_input > 0 else None,
-            "smoking_status":    smoking
-        }
+if predict_btn:
+    payload = {
+        "gender": gender,
+        "age": age,
+        "hypertension": hypert,
+        "heart_disease": heart,
+        "ever_married": married,
+        "work_type": work,
+        "Residence_type": residence,
+        "avg_glucose_level": glucose,
+        "bmi": bmi_input if bmi_input > 0 else None,
+        "smoking_status": smoking
+    }
 
-        try:
-            res  = requests.post("http://127.0.0.1:8000/predict", json=payload, timeout=5)
+    try:
+        with st.spinner("Model waking up... please wait"):
+            res = requests.post(
+                "https://stroke-prediction-xyl4.onrender.com/predict",
+                json=payload,
+                timeout=30
+            )
             data = res.json()
+            st.session_state["prediction_data"] = data
 
-            st.markdown("---")
-            st.markdown('<div class="section-header">Prediction Result</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown('<div class="section-header">Prediction Result</div>', unsafe_allow_html=True)
 
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{data['stroke_probability']*100:.1f}%</div>
-                    <div class="metric-label">Stroke Probability</div>
-                </div>""", unsafe_allow_html=True)
-            with c2:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{'1' if data['prediction'] else '0'}</div>
-                    <div class="metric-label">Prediction (1 = Stroke)</div>
-                </div>""", unsafe_allow_html=True)
-            with c3:
-                risk_class = "risk-high" if data["risk"] == "High" else "risk-low"
-                st.markdown(f"""
-                <div class="{risk_class}">
-                    {'⚠️ HIGH RISK' if data['risk'] == 'High' else '✅ LOW RISK'}
-                </div>""", unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3)
 
-            # Probability gauge
-            st.markdown("")
-            prob = data["stroke_probability"]
-            fig, ax = plt.subplots(figsize=(8, 1.2))
-            ax.barh(0, 1, color=border, height=0.4)
-            ax.barh(0, prob, color=accent if prob >= threshold else "#2ecc71", height=0.4)
-            ax.axvline(threshold, color="white", linestyle="--", linewidth=1.5, label=f"Threshold ({threshold})")
-            ax.set_xlim(0, 1)
-            ax.set_yticks([])
-            ax.set_xlabel("Stroke Probability")
-            ax.legend(loc="upper right", fontsize=8)
-            ax.set_title("Risk Gauge", fontsize=10)
-            st.pyplot(fig)
-            plt.close()
+        with c1:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{data['stroke_probability']*100:.1f}%</div>
+                <div class="metric-label">Stroke Probability</div>
+            </div>""", unsafe_allow_html=True)
 
-        except Exception as e:
-            st.error(f"API Error: {e}. Make sure FastAPI is running on port 8000.")
+        with c2:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{'1' if data['prediction'] else '0'}</div>
+                <div class="metric-label">Prediction (1 = Stroke)</div>
+            </div>""", unsafe_allow_html=True)
+
+        with c3:
+            risk_class = "risk-high" if data["risk"] == "High" else "risk-low"
+            st.markdown(f"""
+            <div class="{risk_class}">
+                {'⚠️ HIGH RISK' if data['risk'] == 'High' else '✅ LOW RISK'}
+            </div>""", unsafe_allow_html=True)
+
+        # Probability gauge
+        st.markdown("")
+        prob = data["stroke_probability"]
+        fig, ax = plt.subplots(figsize=(8, 1.2))
+        ax.barh(0, 1, color=border, height=0.4)
+        ax.barh(0, prob, color=accent if prob >= threshold else "#2ecc71", height=0.4)
+        ax.axvline(threshold, color="white", linestyle="--", linewidth=1.5)
+        ax.set_xlim(0, 1)
+        ax.set_yticks([])
+        ax.set_xlabel("Stroke Probability")
+        ax.set_title("Risk Gauge", fontsize=10)
+        st.pyplot(fig)
+        plt.close()
+
+    except Exception as e:
+        st.error(f"API Error: {e}")
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 2 — EDA
@@ -332,8 +340,7 @@ with tab2:
     ):
         with col:
             st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{val}</div>
+            <div cla>{val}</div>
                 <div class="metric-label">{label}</div>
             </div>""", unsafe_allow_html=True)
 
