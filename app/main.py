@@ -5,6 +5,16 @@ from app.preprocess import predict
 app = FastAPI(title="Stroke Prediction API")
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 def health_check():
     return {"status": "ok", "model": "XGBoost", "version": "1.0"}
