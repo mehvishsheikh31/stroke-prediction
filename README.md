@@ -1,16 +1,3 @@
-<<<<<<< HEAD
----
-title: Stroke Prediction
-emoji: 👀
-colorFrom: purple
-colorTo: yellow
-sdk: docker
-pinned: false
-short_description: 'Stroke prediction app using Machine Learning '
----
-
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
-=======
 # 🧠 Stroke Prediction ML API
 
 > An end-to-end production-grade machine learning system for stroke risk prediction — built with XGBoost, FastAPI, and Streamlit.
@@ -223,4 +210,3 @@ streamlit run app/streamlit_app.py
 - GitHub: [@mehvishsheikh31](https://github.com/mehvishsheikh31)
 - LinkedIn: [mehvishsheikh31](https://linkedin.com/in/mehvishsheikh31)
 - B.Tech CSE (Data Science) — IIST Indore, 2027
->>>>>>> 1e8cbe2f9d3d21e3f6e51ea9bea1bcb3dffadaa0
