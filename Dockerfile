@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY models/ ./models/
 COPY data/ ./data/
+
 COPY start.sh .
 
 RUN chmod +x start.sh
